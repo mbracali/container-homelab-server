@@ -1,0 +1,277 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    profiles:
+      - web_dns
+    environment:
+      - TZ=${TIMEZONE}
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./services/nginx/config:/etc/nginx/conf.d
+    restart: unless-stopped
+
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: duckdns
+    profiles:
+      - web_dns
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TIMEZONE}
+      - SUBDOMAINS=subdomain1,subdomain2
+      - TOKEN=YOUR_TOKEN
+      - LOG_FILE=false
+    volumes:
+      - ./services/duckdns/config:/config #optional
+    restart: unless-stopped
+
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    profiles:
+      - web_dns
+    environment:
+      TZ: ${TIMEZONE}
+      WEBPASSWORD: ${HOMELAB_ADM_PASS}
+    volumes:
+      - ./services/pihole/etc-pihole:/etc/pihole
+      - ./services/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      - 8080:80/tcp # Changed from 80 to prevent conflict with nginx
+    restart: unless-stopped
+
+  tailscale:
+    container_name: tailscale
+    image: tailscale/tailscale:latest
+    profiles:
+      - web_dns
+    environment:
+      - TS_AUTHKEY=tskey-auth-xxxx # Generate an auth key from tailscale admin panel
+      - TS_EXTRA_ARGS=--advertise-tags=tag:container
+      - TS_STATE_DIR=/var/lib/tailscale
+    volumes:
+      - ./services/tailscale/state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+
+  chibisafe:
+    container_name: chibisafe
+    image: chibisafe/chibisafe:latest
+    profiles:
+      - server_management
+    environment:
+      - BASE_URL=http://localhost:8000
+    ports:
+      - 8000:8000
+    volumes:
+      - ./services/chibisafe/database:/chibisafe/database
+      - ./services/chibisafe/uploads:/chibisafe/uploads
+      - ./services/chibisafe/logs:/chibisafe/logs
+    restart: unless-stopped
+
+  duplicati:
+    image: lscr.io/linuxserver/duplicati:latest
+    container_name: duplicati
+    profiles:
+      - server_management
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TIMEZONE}
+    volumes:
+      - ./services/duplicati/config:/config
+      - ./services/duplicati/backups:/backups
+      - ./:/source
+    ports:
+      - 8200:8200
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    profiles:
+      - database_tools
+    environment:
+      POSTGRES_USER: ${HOMELAB_ADM_USER}
+      POSTGRES_PASSWORD: ${HOMELAB_ADM_PASS}
+      POSTGRES_DB: ${HOMELAB_DEFAULT_DATABASE_NAME}
+    ports:
+      - 5432:5432
+    volumes:
+      - ./services/postgres/data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    profiles:
+      - database_tools
+    environment:
+      - SUPERSET_SECRET_KEY=somesecretkey
+    ports:
+      - 8088:8088
+    volumes:
+      - ./services/superset/config:/app/superset_home
+    restart: unless-stopped
+
+  homeassistant:
+    container_name: homeassistant
+    image: homeassistant/home-assistant:latest
+    profiles:
+      - server_tools
+    environment:
+      - TZ=${TIMEZONE}
+    volumes:
+      - ./services/homeassistant/config:/config
+    ports:
+      - 8123:8123
+    restart: unless-stopped
+
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    profiles:
+      - server_tools
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${HOMELAB_DEFAULT_DATABASE_NAME}
+      - POSTGRES_USER=${HOMELAB_ADM_USER}
+      - POSTGRES_PASSWORD=${HOMELAB_ADM_PASS}
+    ports:
+      - 8081:80
+    volumes:
+      - ./services/nextcloud/data:/var/www/html
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    profiles:
+      - server_tools
+    ports:
+      - 5678:5678
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=${TIMEZONE}
+    volumes:
+      - ./services/n8n/data:/home/node/.n8n
+    restart: unless-stopped
+
+  flame:
+    image: pawelmalak/flame:latest
+    container_name: flame
+    profiles:
+      - server_front
+    environment:
+      - PASSWORD=${HOMELAB_ADM_PASS}
+    ports:
+      - 5005:5005
+    volumes:
+      - ./services/flame/data:/app/data
+    restart: unless-stopped
+
+  retroarch:
+    image: lscr.io/linuxserver/retroarch:latest
+    container_name: retroarch
+    profiles:
+      - media
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TIMEZONE}
+    volumes:
+      - ./services/retroarch/config:/config
+      - ${HOMELAB_SHARED_DATA}/roms:/roms
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+
+  minecraft:
+    image: itzg/minecraft-server
+    container_name: minecraft
+    profiles:
+      - media
+    ports:
+      - 25565:25565
+    environment:
+      - EULA=TRUE
+      - VERSION=LATEST
+    volumes:
+      - ./services/minecraft/data:/data
+    restart: unless-stopped
+
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    profiles:
+      - media
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - VERSION=docker
+      - TZ=${TIMEZONE}
+    volumes:
+      - ./services/plex/config:/config
+      - ${HOMELAB_MEDIA}:/data/media # From .env
+    ports:
+      - 32400:32400
+    restart: unless-stopped
+
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    profiles:
+      - media
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TIMEZONE}
+    volumes:
+      - ./services/jellyfin/config:/config
+      - ${HOMELAB_MEDIA}:/data/media # From .env
+    ports:
+      - 8096:8096
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    profiles:
+      - ai
+    ports:
+      - 11434:11434
+    volumes:
+      - ./services/ollama/data:/root/.ollama
+    restart: unless-stopped
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    profiles:
+      - ai
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    ports:
+      - 8082:8080 # Changed to avoid conflict
+    volumes:
+      - ./services/openwebui/data:/app/backend/data
+    depends_on:
+      - ollama
+    restart: unless-stopped

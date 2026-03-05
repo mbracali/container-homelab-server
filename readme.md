@@ -12,65 +12,63 @@ The repository is organized to separate configuration (Git-tracked) from persist
 
 ```text
 home-server/
-├── compose.yaml             # Master orchestration file for all services
-├── .env.example             # Template for environment variables
-├── services/                # Isolated configuration for each service
-│   │
-│   ├── [custom-service]/    # Example: Custom notepad map (This can be a MCP, a API, a portal...)
-│   │   ├── config/          # Map to /config inside of the docker
-│   │   ├── data/            # Can maped to /data, loke a volume
-│   │   ├── src/             # Service-specific scripts and logic
-│   │   └── Dockerfile       # If a custom service is developed, store the dockerfile here
-│   │
-│   ├── [home-page]/         # Service that create a home page for your home-lab
-│   │   ├── config/          # Map to /config inside of the docker
-│   │   └── dnsmasq.d/       # Maps to /etc/dnsmasq.d. Stores advanced network routing rules.
-│   │
-│   ├── [example-pi-hole]/   # Example of a service that is not custom, just a container
-│   │   ├── etc-pihole/      # Maps to /etc/pihole inside the container. Stores your blocklists and custom DNS records.
-│   │   └── dnsmasq.d/       # Maps to /etc/dnsmasq.d. Stores advanced network routing rules.
-│   │
-│   ├── [service-name]/      # e.g., media-server, dns, proxy
-│   │   ├── config/          # Service-specific config files
-│   │   └── Dockerfile       # (Optional) Custom build definition
-│   │
-├── data/                    # Persistent data volumes (ignored by Git)
-└── scripts/                 # Helper scripts (backup, deploy, maintenance)
+├─ .logs/                       # Logs for the homelab servers
+│
+├─ homelab_deploy/              # Deploy files for the homelab servers
+│  ├─ scripts/                  # Specific scripts for the deploy
+│  └─ templates/                # Templates for the deploy
+│
+├─ services/                    # Files shared between services
+│  ├─ assets/                   # Assets used by multiple services
+│  │   ├─ backups/              # General backups
+│  │   ├─ documents/            # Managed documents
+│  │   ├─ markdowns/            # Destined for all the markdown shared files
+│  │   └─ workflows/            # Saved pipelines and workflows
+│  │
+│  ├─ media/                    # Folder destined to save all media files
+│  │  ├─ 1-games/               # Game related files
+│  │  │  ├─ svr_minecraft/      # Minecraft server files
+│  │  │  └─ roms/               # Roms for emulators
+│  │  │
+│  │  ├─ 2-books/               # Stored books
+│  │  ├─ 3-audiobooks/          # Stored music
+│  │  ├─ 4-podcasts/            # Stored podcasts
+│  │  ├─ 5-music/               # Stored music
+│  │  ├─ 6-photos/              # Stored photos
+│  │  ├─ 7-movies/              # Stored movies
+│  │  ├─ 8-series/              # Stored series and tv shows
+│  │  ├─ 9-videos/              # Stored videos
+│
+├─ .env
+├─ .gitgnore
+├─ compose.yaml
+└─ README.md
+
+
 ```
 
 Links for apps used in this home lab (Table of Contents)
 
-| App | About | Docker Hub |
-| --- | --- | --- |
-| [Nginx](https://nginx.org/) | Reverse Proxy | https://hub.docker.com/hardened-images/catalog/dhi/nginx |
-| [DuckDNS](https://www.duckdns.org/) | DNS handler (Traffic that goes in my home) | https://hub.docker.com/r/linuxserver/duckdns
-| [Pi-hole](https://pi-hole.net/) | DNS handler (Traffic that goes out my home) | https://hub.docker.com/r/diginc/pi-hole |
-| [Tailscale](https://tailscale.com/) | VPN | https://hub.docker.com/extensions/tailscale/docker-extension |
-| [Chibi Safe](https://chibisafe.moe/) | Remote file manager | https://hub.docker.com/r/chibisafe/chibisafe |
-| [Duplicati](https://duplicati.com/) | Backup | https://hub.docker.com/r/linuxserver/duplicati |
-| [Flame](https://github.com/pawelmalak/flame?ref=roadtohomelab.blog) | Homelab homescreen | https://hub.docker.com/r/pawelmalak/flame |
-| PostgresDB | Database | https://hub.docker.com/_/postgres |
-| Superset | Dashboards | https://hub.docker.com/r/apache/superset |
-| N8N | Automation | https://hub.docker.com/r/n8nio/n8n |
-| Ollama | LLM engine | https://hub.docker.com/r/ollama/ollama |
-| Open Web UI | LLM GUI | https://docs.openwebui.com/getting-started/quick-start/ |
-| [Plex](https://watch.plex.tv/) | Media Server | https://hub.docker.com/r/linuxserver/plex |
+| App | Type | About | Docker Hub |
+| --- | --- | --- | --- |
+| [Nginx](https://nginx.org/) | Web/DNS | Reverse Proxy | https://hub.docker.com/hardened-images/catalog/dhi/nginx |
+| [DuckDNS](https://www.duckdns.org/) | Web/DNS | DNS handler (Traffic that goes in my home) | https://hub.docker.com/r/linuxserver/duckdns
+| [Pi-hole](https://pi-hole.net/) | Web/DNS | DNS handler (Traffic that goes out my home) | https://hub.docker.com/r/diginc/pi-hole |
+| [Tailscale](https://tailscale.com/) | Web/DNS | VPN | https://hub.docker.com/extensions/tailscale/docker-extension |
+| [Chibi Safe](https://chibisafe.moe/) | Server Management | Remote file manager | https://hub.docker.com/r/chibisafe/chibisafe |
+| [Duplicati](https://duplicati.com/) | Server Management | Backup | https://hub.docker.com/r/linuxserver/duplicati |
+| PostgresDB | Database Tools | Database | https://hub.docker.com/_/postgres |
+| Superset | Database Tools | Dashboards | https://hub.docker.com/r/apache/superset |
+| [Home Assistant](https://www.home-assistant.io/) | Server Tools | Automation | https://hub.docker.com/r/home-assistant/home-assistant |
+| [Next Cloud](https://nextcloud.com/) | Server Tools | Open Source office tools | https://hub.docker.com/_/nextcloud/ |
+| N8N | Server Tools | Automation | https://hub.docker.com/r/n8nio/n8n |
+| [Flame](https://github.com/pawelmalak/flame?ref=roadtohomelab.blog) | Server Front | Homelab homescreen | https://hub.docker.com/r/pawelmalak/flame |
+| Retroarch | Media | Gamming emulation home | https://hub.docker.com/r/linuxserver/retroarch |
+| Minecraft Server | Media | Gamming server | https://hub.docker.com/r/itzg/minecraft-server |
+| [Plex](https://watch.plex.tv/) | Media | Media Streaming Server | https://hub.docker.com/r/linuxserver/plex |
+| [Jellyfin](https://jellyfin.org/) | Media | Media Streaming Server| https://hub.docker.com/r/linuxserver/jellyfin |
+| Ollama | AI | Ai agent engine | https://hub.docker.com/r/ollama/ollama |
+| Open Web UI | AI | Ai agent GUI | https://docs.openwebui.com/getting-started/quick-start/ |
 
-
-
-https://github.com/Haxxnet/Compose-Examples?tab=readme-ov-file#backups
-
-
-
-
-| Jellyfin | https://jellyfin.org/ | https://hub.docker.com/r/linuxserver/jellyfin |
-| Pi-hole | https://pi-hole.net/ | https://hub.docker.com/r/pihole/pihole |
-| Home Assistant | https://www.home-assistant.io/ | https://hub.docker.com/r/home-assistant/home-assistant |
-| Nextcloud | https://nextcloud.com/ |
-| Plex | https://www.plex.tv/ |
-| Synology | https://www.synology.com/ |
-| QNAP | https://www.qnap.com/ |
-| Synology | https://www.synology.com/ |
-| Synology | https://www.synology.com/ |
 
 
